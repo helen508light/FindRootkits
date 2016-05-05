@@ -1,0 +1,959 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.5.2" />
+<title>An analisys of the "ncom" Rootkit</title>
+<style type="text/css">
+/* Debug borders */
+p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
+/*
+  border: 1px solid red;
+*/
+}
+
+body {
+  margin: 1em 5% 1em 5%;
+}
+
+a {
+  color: blue;
+  text-decoration: underline;
+}
+a:visited {
+  color: fuchsia;
+}
+
+em {
+  font-style: italic;
+  color: navy;
+}
+
+strong {
+  font-weight: bold;
+  color: #083194;
+}
+
+tt {
+  color: navy;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #527bbd;
+  font-family: sans-serif;
+  margin-top: 1.2em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+h1, h2, h3 {
+  border-bottom: 2px solid silver;
+}
+h2 {
+  padding-top: 0.5em;
+}
+h3 {
+  float: left;
+}
+h3 + * {
+  clear: left;
+}
+
+div.sectionbody {
+  font-family: serif;
+  margin-left: 0;
+}
+
+hr {
+  border: 1px solid silver;
+}
+
+p {
+  margin-top: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+ul, ol, li > p {
+  margin-top: 0;
+}
+
+pre {
+  padding: 0;
+  margin: 0;
+}
+
+span#author {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+span#email {
+}
+span#revnumber, span#revdate, span#revremark {
+  font-family: sans-serif;
+}
+
+div#footer {
+  font-family: sans-serif;
+  font-size: small;
+  border-top: 2px solid silver;
+  padding-top: 0.5em;
+  margin-top: 4.0em;
+}
+div#footer-text {
+  float: left;
+  padding-bottom: 0.5em;
+}
+div#footer-badges {
+  float: right;
+  padding-bottom: 0.5em;
+}
+
+div#preamble {
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+}
+div.tableblock, div.imageblock, div.exampleblock, div.verseblock,
+div.quoteblock, div.literalblock, div.listingblock, div.sidebarblock,
+div.admonitionblock {
+  margin-top: 1.0em;
+  margin-bottom: 1.5em;
+}
+div.admonitionblock {
+  margin-top: 2.0em;
+  margin-bottom: 2.0em;
+  margin-right: 10%;
+  color: #606060;
+}
+
+div.content { /* Block element content. */
+  padding: 0;
+}
+
+/* Block element titles. */
+div.title, caption.title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  text-align: left;
+  margin-top: 1.0em;
+  margin-bottom: 0.5em;
+}
+div.title + * {
+  margin-top: 0;
+}
+
+td div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content div.title:first-child {
+  margin-top: 0.0em;
+}
+div.content + div.title {
+  margin-top: 0.0em;
+}
+
+div.sidebarblock > div.content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+
+div.listingblock > div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock, div.verseblock {
+  padding-left: 1.0em;
+  margin-left: 1.0em;
+  margin-right: 10%;
+  border-left: 5px solid #dddddd;
+  color: #777777;
+}
+
+div.quoteblock > div.attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock > div.content {
+  white-space: pre;
+}
+div.verseblock > div.attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+/* DEPRECATED: Pre version 8.2.7 verse style literal block. */
+div.verseblock + div.attribution {
+  text-align: left;
+}
+
+div.admonitionblock .icon {
+  vertical-align: top;
+  font-size: 1.1em;
+  font-weight: bold;
+  text-decoration: underline;
+  color: #527bbd;
+  padding-right: 0.5em;
+}
+div.admonitionblock td.content {
+  padding-left: 0.5em;
+  border-left: 3px solid #dddddd;
+}
+
+div.exampleblock > div.content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+div.imageblock div.content { padding-left: 0; }
+span.image img { border-style: none; }
+a.image:visited { color: white; }
+
+dl {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+dt {
+  margin-top: 0.5em;
+  margin-bottom: 0;
+  font-style: normal;
+  color: navy;
+}
+dd > *:first-child {
+  margin-top: 0.1em;
+}
+
+ul, ol {
+    list-style-position: outside;
+}
+ol.arabic {
+  list-style-type: decimal;
+}
+ol.loweralpha {
+  list-style-type: lower-alpha;
+}
+ol.upperalpha {
+  list-style-type: upper-alpha;
+}
+ol.lowerroman {
+  list-style-type: lower-roman;
+}
+ol.upperroman {
+  list-style-type: upper-roman;
+}
+
+div.compact ul, div.compact ol,
+div.compact p, div.compact p,
+div.compact div, div.compact div {
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+
+div.tableblock > table {
+  border: 3px solid #527bbd;
+}
+thead, p.table.header {
+  font-family: sans-serif;
+  font-weight: bold;
+}
+tfoot {
+  font-weight: bold;
+}
+td > div.verse {
+  white-space: pre;
+}
+p.table {
+  margin-top: 0;
+}
+/* Because the table frame attribute is overriden by CSS in most browsers. */
+div.tableblock > table[frame="void"] {
+  border-style: none;
+}
+div.tableblock > table[frame="hsides"] {
+  border-left-style: none;
+  border-right-style: none;
+}
+div.tableblock > table[frame="vsides"] {
+  border-top-style: none;
+  border-bottom-style: none;
+}
+
+
+div.hdlist {
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+div.hdlist tr {
+  padding-bottom: 15px;
+}
+dt.hdlist1.strong, td.hdlist1.strong {
+  font-weight: bold;
+}
+td.hdlist1 {
+  vertical-align: top;
+  font-style: normal;
+  padding-right: 0.8em;
+  color: navy;
+}
+td.hdlist2 {
+  vertical-align: top;
+}
+div.hdlist.compact tr {
+  margin: 0;
+  padding-bottom: 0;
+}
+
+.comment {
+  background: yellow;
+}
+
+.footnote, .footnoteref {
+  font-size: 0.8em;
+}
+
+span.footnote, span.footnoteref {
+  vertical-align: super;
+}
+
+#footnotes {
+  margin: 20px 0 20px 0;
+  padding: 7px 0 0 0;
+}
+
+#footnotes div.footnote {
+  margin: 0 0 5px 0;
+}
+
+#footnotes hr {
+  border: none;
+  border-top: 1px solid silver;
+  height: 1px;
+  text-align: left;
+  margin-left: 0;
+  width: 20%;
+  min-width: 100px;
+}
+
+
+@media print {
+  div#footer-badges { display: none; }
+}
+
+div#toc {
+  margin-bottom: 2.5em;
+}
+
+div#toctitle {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-size: 1.1em;
+  font-weight: bold;
+  margin-top: 1.0em;
+  margin-bottom: 0.1em;
+}
+
+div.toclevel1, div.toclevel2, div.toclevel3, div.toclevel4 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+div.toclevel2 {
+  margin-left: 2em;
+  font-size: 0.9em;
+}
+div.toclevel3 {
+  margin-left: 4em;
+  font-size: 0.9em;
+}
+div.toclevel4 {
+  margin-left: 6em;
+  font-size: 0.9em;
+}
+/* Workarounds for IE6's broken and incomplete CSS2. */
+
+div.sidebar-content {
+  background: #ffffee;
+  border: 1px solid silver;
+  padding: 0.5em;
+}
+div.sidebar-title, div.image-title {
+  color: #527bbd;
+  font-family: sans-serif;
+  font-weight: bold;
+  margin-top: 0.0em;
+  margin-bottom: 0.5em;
+}
+
+div.listingblock div.content {
+  border: 1px solid silver;
+  background: #f4f4f4;
+  padding: 0.5em;
+}
+
+div.quoteblock-attribution {
+  padding-top: 0.5em;
+  text-align: right;
+}
+
+div.verseblock-content {
+  white-space: pre;
+}
+div.verseblock-attribution {
+  padding-top: 0.75em;
+  text-align: left;
+}
+
+div.exampleblock-content {
+  border-left: 3px solid #dddddd;
+  padding-left: 0.5em;
+}
+
+/* IE6 sets dynamically generated links as visited. */
+div#toc a:visited { color: blue; }
+</style>
+<script type="text/javascript">
+/*<![CDATA[*/
+window.onload = function(){asciidoc.footnotes(); asciidoc.toc(2);}
+var asciidoc = {  // Namespace.
+
+/////////////////////////////////////////////////////////////////////
+// Table Of Contents generator
+/////////////////////////////////////////////////////////////////////
+
+/* Author: Mihai Bazon, September 2002
+ * http://students.infoiasi.ro/~mishoo
+ *
+ * Table Of Content generator
+ * Version: 0.4
+ *
+ * Feel free to use this script under the terms of the GNU General Public
+ * License, as long as you do not remove or alter this notice.
+ */
+
+ /* modified by Troy D. Hanson, September 2006. License: GPL */
+ /* modified by Stuart Rackham, 2006, 2009. License: GPL */
+
+// toclevels = 1..4.
+toc: function (toclevels) {
+
+  function getText(el) {
+    var text = "";
+    for (var i = el.firstChild; i != null; i = i.nextSibling) {
+      if (i.nodeType == 3 /* Node.TEXT_NODE */) // IE doesn't speak constants.
+        text += i.data;
+      else if (i.firstChild != null)
+        text += getText(i);
+    }
+    return text;
+  }
+
+  function TocEntry(el, text, toclevel) {
+    this.element = el;
+    this.text = text;
+    this.toclevel = toclevel;
+  }
+
+  function tocEntries(el, toclevels) {
+    var result = new Array;
+    var re = new RegExp('[hH]([2-'+(toclevels+1)+'])');
+    // Function that scans the DOM tree for header elements (the DOM2
+    // nodeIterator API would be a better technique but not supported by all
+    // browsers).
+    var iterate = function (el) {
+      for (var i = el.firstChild; i != null; i = i.nextSibling) {
+        if (i.nodeType == 1 /* Node.ELEMENT_NODE */) {
+          var mo = re.exec(i.tagName);
+          if (mo && (i.getAttribute("class") || i.getAttribute("className")) != "float") {
+            result[result.length] = new TocEntry(i, getText(i), mo[1]-1);
+          }
+          iterate(i);
+        }
+      }
+    }
+    iterate(el);
+    return result;
+  }
+
+  var toc = document.getElementById("toc");
+  var entries = tocEntries(document.getElementById("content"), toclevels);
+  for (var i = 0; i < entries.length; ++i) {
+    var entry = entries[i];
+    if (entry.element.id == "")
+      entry.element.id = "_toc_" + i;
+    var a = document.createElement("a");
+    a.href = "#" + entry.element.id;
+    a.appendChild(document.createTextNode(entry.text));
+    var div = document.createElement("div");
+    div.appendChild(a);
+    div.className = "toclevel" + entry.toclevel;
+    toc.appendChild(div);
+  }
+  if (entries.length == 0)
+    toc.parentNode.removeChild(toc);
+},
+
+
+/////////////////////////////////////////////////////////////////////
+// Footnotes generator
+/////////////////////////////////////////////////////////////////////
+
+/* Based on footnote generation code from:
+ * http://www.brandspankingnew.net/archive/2005/07/format_footnote.html
+ */
+
+footnotes: function () {
+  var cont = document.getElementById("content");
+  var noteholder = document.getElementById("footnotes");
+  var spans = cont.getElementsByTagName("span");
+  var refs = {};
+  var n = 0;
+  for (i=0; i<spans.length; i++) {
+    if (spans[i].className == "footnote") {
+      n++;
+      // Use [\s\S] in place of . so multi-line matches work.
+      // Because JavaScript has no s (dotall) regex flag.
+      note = spans[i].innerHTML.match(/\s*\[([\s\S]*)]\s*/)[1];
+      noteholder.innerHTML +=
+        "<div class='footnote' id='_footnote_" + n + "'>" +
+        "<a href='#_footnoteref_" + n + "' title='Return to text'>" +
+        n + "</a>. " + note + "</div>";
+      spans[i].innerHTML =
+        "[<a id='_footnoteref_" + n + "' href='#_footnote_" + n +
+        "' title='View footnote' class='footnote'>" + n + "</a>]";
+      var id =spans[i].getAttribute("id");
+      if (id != null) refs["#"+id] = n;
+    }
+  }
+  if (n == 0)
+    noteholder.parentNode.removeChild(noteholder);
+  else {
+    // Process footnoterefs.
+    for (i=0; i<spans.length; i++) {
+      if (spans[i].className == "footnoteref") {
+        var href = spans[i].getElementsByTagName("a")[0].getAttribute("href");
+        href = href.match(/#.*/)[0];  // Because IE return full URL.
+        n = refs[href];
+        spans[i].innerHTML =
+          "[<a href='#_footnote_" + n +
+          "' title='View footnote' class='footnote'>" + n + "</a>]";
+      }
+    }
+  }
+}
+
+}
+/*]]>*/
+</script>
+</head>
+<body>
+<div id="header">
+<h1>An analisys of the "ncom" Rootkit</h1>
+<div id="toc">
+  <div id="toctitle">Table of Contents</div>
+  <noscript><p><b>JavaScript must be enabled in your browser to display the table of contents.</b></p></noscript>
+</div>
+</div>
+<div id="content">
+<h2 id="_author">Author</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This research was made by Alessandro Grassi (Sonne), in March 21-23 2011.</p></div>
+<div class="paragraph"><p>If you want to contact me, you can do so</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+by email: &lt;<a href="mailto:alessandro@aggro.it">alessandro@aggro.it</a>&gt; / &lt;<a href="mailto:alessandro.grassi@devise.it">alessandro.grassi@devise.it</a>&gt;
+</p>
+</li>
+<li>
+<p>
+or on IRC: Sonne @ #plug-it, FreeNode
+</p>
+</li>
+</ul></div>
+</div>
+<h2 id="_introduction">Introduction</h2>
+<div class="sectionbody">
+<div class="paragraph"><p></p></div>
+<div class="paragraph"><p>The rootkit being examined here is codenamed "ncom". It was found "in the wild" on a rooted box. It makes use of a technique called "libcall hijacking".</p></div>
+<div class="paragraph"><p>While the technique was already known, there was no proof that it was being used for malicious purposes - this is, to my knowledge, the first rootkit to make use of such technique.</p></div>
+<div class="paragraph"><p>It all started when my colleague mnencia pointed me to this bug report:</p></div>
+<div class="paragraph"><p><a href="http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=619137">http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=619137</a></p></div>
+<div class="paragraph"><p>A certain library called "libncom.so.4.0.1" was causing random crashes in dovecot.</p></div>
+<div class="paragraph"><p>Having smelled something funny, i contacted the bug reporter via IRC, asking to see personally what was going on.</p></div>
+<div class="paragraph"><p>Pekka was very kind and gave me access to his system, so i managed to find out that the box was rooted and kitted.</p></div>
+<div class="paragraph"><p>Since the rootkit is using a new technique, we thought i&#8217;d analyze it and publish the results, so others could be warned of the risk.</p></div>
+</div>
+<h2 id="_libcall_hijacking_wait_what">Libcall hijacking / Wait, what?</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>I&#8217;m not going to explain in depth how libcall hijacking works, because it&#8217;s beyond the scope of this document.</p></div>
+<div class="paragraph"><p>I will however throw a quick introduction:</p></div>
+<div class="paragraph"><p>When a program calls a function which is not included in its source, it&#8217;s looked up in the libraries linked to that program during compilation.</p></div>
+<div class="paragraph"><p>The easiest example that comes to mind is printf: The classic "hello world" program references printf(), however the function is not implemented in the program itself.</p></div>
+<div class="paragraph"><p>During the compiling process, in the linking phase, the hello world program is linked to the libc (typically libc.so.6), so when it calls the printf() function on runtime the function is looked up in the linked libraries and called, making the program work.</p></div>
+<div class="paragraph"><p>You have the possibility, however, to make the system load a certain library before the others by preloading it, making the program call the functions that the preloaded library implements rather than the ones it&#8217;s supposed to be referencing.</p></div>
+<div class="paragraph"><p>This way it is possible to alter the program execution flow, by making library calls behave differently from what the program expects.</p></div>
+<div class="paragraph"><p>Preloading is possible both locally (LD_PRELOAD environment variable) and globally (/etc/ld.so.preload).</p></div>
+<div class="paragraph"><p>The ncom rootkit works by placing itself on /etc/ld.so.preload, and wrapping library calls such as those normally used for listing processes or files, altering their result.</p></div>
+<div class="paragraph"><p>Now that we know the idea behind the technique, let&#8217;s see what this nasty fella does:</p></div>
+</div>
+<h2 id="_rootkit_analysis">Rootkit Analysis</h2>
+<div class="sectionbody">
+<h3 id="_what_is_wrapped">What is wrapped?</h3><div style="clear:left"></div>
+<div class="paragraph"><p>By taking a quick glance at the rootkit, we find that the following functions are implemented (functions present in the libc are <strong>highlighted</strong>):</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+__xstat64-0xd0
+</p>
+</li>
+<li>
+<p>
+<strong>__xstat64</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>__xstat</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>fopen64</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>fopen</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>readdir64</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>readdir</strong>
+</p>
+</li>
+<li>
+<p>
+<strong>accept</strong>
+</p>
+</li>
+<li>
+<p>
+my_accept
+</p>
+</li>
+<li>
+<p>
+drop_dupshell
+</p>
+</li>
+<li>
+<p>
+drop_suidshell
+</p>
+</li>
+<li>
+<p>
+drop_suidshell_if_env_is_set
+</p>
+</li>
+<li>
+<p>
+sigchld_handler
+</p>
+</li>
+<li>
+<p>
+is_readdir_result_invisible
+</p>
+</li>
+<li>
+<p>
+is_readdir64_result_invisible
+</p>
+</li>
+<li>
+<p>
+my_netstat
+</p>
+</li>
+<li>
+<p>
+is_proc_net_tcp
+</p>
+</li>
+<li>
+<p>
+is_ld_so_preload
+</p>
+</li>
+<li>
+<p>
+is_invisible
+</p>
+</li>
+<li>
+<p>
+is_file_invisible
+</p>
+</li>
+<li>
+<p>
+shall_stat_return_error
+</p>
+</li>
+</ul></div>
+<div class="paragraph"><p>The libc-like named functions make it so that all programs in the system run them instead of the original ones.</p></div>
+<div class="paragraph"><p>A few of them serve the purpose of merely hiding things, others have way more nefarious intents, as we are about to see.</p></div>
+<h3 id="_what_is_hidden">What is hidden?</h3><div style="clear:left"></div>
+<div class="paragraph"><p>The most basic syscall or libcall you&#8217;d be hijacking if you were to hide something is readdir, as it works for both files and processes (assuming that process listers use the /proc interface).</p></div>
+<div class="paragraph"><p>Let&#8217;s take a look at this snippet from the rootkit&#8217;s readdir() implementation:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x000000000000185c &lt;readdir+60&gt;:        mov    %rbp,%rdi
+0x000000000000185f &lt;readdir+63&gt;:        callq  0x1220 &lt;is_readdir_result_invisible@plt&gt;
+0x0000000000001864 &lt;readdir+68&gt;:        test   %eax,%eax
+0x0000000000001866 &lt;readdir+70&gt;:        jne    0x1830 &lt;readdir+16&gt;
+0x0000000000001868 &lt;readdir+72&gt;:        add    $0x8,%rsp
+0x000000000000186c &lt;readdir+76&gt;:        mov    %rbp,%rax
+0x000000000000186f &lt;readdir+79&gt;:        pop    %rbx
+0x0000000000001870 &lt;readdir+80&gt;:        pop    %rbp
+0x0000000000001871 &lt;readdir+81&gt;:        retq</tt></pre>
+</div></div>
+<div class="paragraph"><p>Once a process is found, the rootkit uses the internal function is_readdir_result_invisible() to find out whether to hide the data or not, which is basically a wrapper for the more generic is_invisible().</p></div>
+<div class="paragraph"><p>Let&#8217;s take a look at it:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x0000000000002048 &lt;is_invisible+360&gt;:  lea    0x1bd(%rip),%rsi        # 0x220c - string "_-"
+0x000000000000204f &lt;is_invisible+367&gt;:  mov    %rsp,%rdi
+0x0000000000002052 &lt;is_invisible+370&gt;:  callq  0x1300 &lt;strstr@plt&gt;
+0x0000000000002057 &lt;is_invisible+375&gt;:  test   %rax,%rax
+0x000000000000205a &lt;is_invisible+378&gt;:  setne  %al
+0x000000000000205d &lt;is_invisible+381&gt;:  movzbl %al,%eax
+0x0000000000002060 &lt;is_invisible+384&gt;:  jmpq   0x1f36 &lt;is_invisible+86&gt;
+[..]
+0x0000000000001f1e &lt;is_invisible+62&gt;:   lea    0x2ea(%rip),%rdi        # 0x220f - string "libncom.so.4.0.1"
+0x0000000000001f25 &lt;is_invisible+69&gt;:   mov    $0x11,%ecx
+0x0000000000001f2a &lt;is_invisible+74&gt;:   mov    %rdx,%rsi
+0x0000000000001f2d &lt;is_invisible+77&gt;:   repz cmpsb %es:(%rdi),%ds:(%rsi)
+0x0000000000001f2f &lt;is_invisible+79&gt;:   jne    0x1f60 &lt;is_invisible+128&gt;
+[..]
+0x0000000000001f36 &lt;is_invisible+86&gt;:   mov    0x3090(%rsp),%rbx
+0x0000000000001f3e &lt;is_invisible+94&gt;:   mov    0x3098(%rsp),%rbp
+0x0000000000001f46 &lt;is_invisible+102&gt;:  mov    0x30a0(%rsp),%r12
+0x0000000000001f4e &lt;is_invisible+110&gt;:  add    $0x30a8,%rsp
+0x0000000000001f55 &lt;is_invisible+117&gt;:  retq</tt></pre>
+</div></div>
+<div class="paragraph"><p>The string "_-", as well as the name of the rootkit library itself, are checked against the file name or the content of /proc/[filename]/cmdline and if found, the function returns without reporting the entry, thus hiding it from the file (or directory) list.</p></div>
+<div class="paragraph"><p>This can be verified on the backdoored system:</p></div>
+<div class="paragraph"><p>The file is hidden:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>root@aria:~# ls -l
+total 0
+root@aria:~# ln -s /bin/cat _-
+root@aria:~# ls -l
+total 0
+root@aria:~# ls -l _-
+lrwxrwxrwx 1 root root 8 Mar 23 22:47 _- -&gt; /bin/cat
+root@aria:~#</tt></pre>
+</div></div>
+<div class="paragraph"><p>And so is the process:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>root@aria:~# ./_-
+^Z
+[1]+  Stopped                 ./_-
+root@aria:~# ps
+  PID TTY          TIME CMD
+ 2636 pts/0    00:00:00 bash
+ 2768 pts/0    00:00:00 ps
+root@aria:~#</tt></pre>
+</div></div>
+<div class="paragraph"><p>Another interesting function that is being wrapped is fopen().</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x0000000000001793 &lt;fopen+99&gt;:  callq  0x1260 &lt;is_proc_net_tcp@plt&gt;
+0x0000000000001798 &lt;fopen+104&gt;: test   %eax,%eax
+0x000000000000179a &lt;fopen+106&gt;: je     0x1770 &lt;fopen+64&gt;
+0x000000000000179c &lt;fopen+108&gt;: mov    (%rsp),%rbx
+0x00000000000017a0 &lt;fopen+112&gt;: mov    0x8(%rsp),%rbp
+0x00000000000017a5 &lt;fopen+117&gt;: xor    %eax,%eax
+0x00000000000017a7 &lt;fopen+119&gt;: mov    0x10(%rsp),%r12
+0x00000000000017ac &lt;fopen+124&gt;: add    $0x18,%rsp
+0x00000000000017b0 &lt;fopen+128&gt;: jmpq   0x12f0 &lt;my_netstat@plt&gt;</tt></pre>
+</div></div>
+<div class="paragraph"><p>The backdoored fopen() checks whether the file being opened is /proc/net/tcp, in which case, the internal function my_netstat is called, which makes a copy of /proc/net/tcp and strips the lines that are to be hidden from it before passing the descriptor to the calling program, thus hiding the attacker&#8217;s connections as well.</p></div>
+<div class="paragraph"><p>Last but not least, the xstat() wrapper has two main functions. One of which is hiding the rootkit itself:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x00000000000015ca &lt;__xstat64+106&gt;:     callq  0x1270 &lt;shall_stat_return_error@plt&gt;
+0x00000000000015cf &lt;__xstat64+111&gt;:     test   %eax,%eax
+0x00000000000015d1 &lt;__xstat64+113&gt;:     jne    0x159c &lt;__xstat64+60&gt;
+[..]
+0x000000000000159c &lt;__xstat64+60&gt;:      mov    $0xffffffff,%eax
+0x00000000000015a1 &lt;__xstat64+65&gt;:      mov    0x8(%rsp),%rbx
+0x00000000000015a6 &lt;__xstat64+70&gt;:      mov    0x10(%rsp),%rbp
+0x00000000000015ab &lt;__xstat64+75&gt;:      mov    0x18(%rsp),%r12
+0x00000000000015b0 &lt;__xstat64+80&gt;:      mov    0x20(%rsp),%r13
+0x00000000000015b5 &lt;__xstat64+85&gt;:      add    $0x28,%rsp
+0x00000000000015b9 &lt;__xstat64+89&gt;:      retq
+
+0x00000000000020f3 &lt;shall_stat_return_error+51&gt;:        callq  0x1430 &lt;is_ld_so_preload@plt&gt;
+0x00000000000020f8 &lt;shall_stat_return_error+56&gt;:        test   %eax,%eax
+0x00000000000020fa &lt;shall_stat_return_error+58&gt;:        je     0x20ce &lt;shall_stat_return_error+14&gt;
+[..]
+0x00000000000020ce &lt;shall_stat_return_error+14&gt;:        xor    %eax,%eax
+0x00000000000020d0 &lt;shall_stat_return_error+16&gt;:        pop    %rbx
+0x00000000000020d1 &lt;shall_stat_return_error+17&gt;:        retq</tt></pre>
+</div></div>
+<div class="paragraph"><p>So if the file being stat()ed is /etc/ld.so.preload, the library returns an error, thus hiding the presence of the rootkit:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>root@aria:~# ls -l /etc/ld.so.prel*
+ls: cannot access /etc/ld.so.prel*: No such file or directory
+root@aria:~# cat /etc/ld.so.preload
+/lib/libncom.so.4.0.1</tt></pre>
+</div></div>
+<div class="paragraph"><p>Did i just say that the xstat() wrapper has two functions? It&#8217;s time to get to the next part&#8230;</p></div>
+<h3 id="_the_backdoor">The Backdoor</h3><div style="clear:left"></div>
+<div class="paragraph"><p>Every rootkit worth its name does at least two things: hides the attacker, and grants him access. This one is no less.
+It has two backdoors. The local backdoor is in the xstat() wrapper:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x00000000000015c2 &lt;__xstat64+98&gt;:      callq  0x1440 &lt;drop_suidshell_if_env_is_set@plt&gt;
+
+0x0000000000001b30 &lt;drop_suidshell_if_env_is_set+0&gt;:    lea    0x6aa(%rip),%rdi        # 0x21e1 - string 'C53Y'
+0x0000000000001b37 &lt;drop_suidshell_if_env_is_set+7&gt;:    sub    $0x8,%rsp
+0x0000000000001b3b &lt;drop_suidshell_if_env_is_set+11&gt;:   callq  0x1370 &lt;getenv@plt&gt;
+0x0000000000001b40 &lt;drop_suidshell_if_env_is_set+16&gt;:   test   %rax,%rax
+0x0000000000001b43 &lt;drop_suidshell_if_env_is_set+19&gt;:   je     0x1b52 &lt;drop_suidshell_if_env_is_set+34&gt;
+0x0000000000001b45 &lt;drop_suidshell_if_env_is_set+21&gt;:   callq  0x1290 &lt;geteuid@plt&gt;
+0x0000000000001b4a &lt;drop_suidshell_if_env_is_set+26&gt;:   test   %eax,%eax
+0x0000000000001b4c &lt;drop_suidshell_if_env_is_set+28&gt;:   nopl   0x0(%rax)
+0x0000000000001b50 &lt;drop_suidshell_if_env_is_set+32&gt;:   je     0x1b60 &lt;drop_suidshell_if_env_is_set+48&gt;
+0x0000000000001b52 &lt;drop_suidshell_if_env_is_set+34&gt;:   add    $0x8,%rsp
+0x0000000000001b56 &lt;drop_suidshell_if_env_is_set+38&gt;:   retq
+0x0000000000001b57 &lt;drop_suidshell_if_env_is_set+39&gt;:   nopw   0x0(%rax,%rax,1)
+0x0000000000001b60 &lt;drop_suidshell_if_env_is_set+48&gt;:   add    $0x8,%rsp
+0x0000000000001b64 &lt;drop_suidshell_if_env_is_set+52&gt;:   jmpq   0x1390 &lt;drop_suidshell@plt&gt;</tt></pre>
+</div></div>
+<div class="paragraph"><p>What this means is:
+Any program throwing a xstat() during its life cycle checks whether the C53Y environment variable is set and if it is, if the program is suid root (geteuid() returns 0), drops a suidshell.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>sonne@aria:~$ su
+Password:
+su: Authentication failure
+sonne@aria:~$ C53Y=foo su
+root@aria:~#</tt></pre>
+</div></div>
+<div class="paragraph"><p>The other backdoor is in the accept() wrapper.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>0x00000000000018b6 &lt;accept+54&gt;: callq  *%rax            # stored address for libc accept()
+[..]
+0x00000000000018cf &lt;accept+79&gt;: jmpq   0x13c0 &lt;my_accept@plt&gt;
+
+0x00000000000018f2 &lt;my_accept+18&gt;:      movzwl 0x2(%rsi),%eax
+0x00000000000018f6 &lt;my_accept+22&gt;:      ror    $0x8,%ax
+0x00000000000018fa &lt;my_accept+26&gt;:      add    $0x11b8,%ax
+0x00000000000018fe &lt;my_accept+30&gt;:      cmp    $0xa,%ax
+0x0000000000001902 &lt;my_accept+34&gt;:      jbe    0x191d &lt;my_accept+61&gt;
+[..]
+0x000000000000191d &lt;my_accept+61&gt;:      nopl   (%rax)
+0x0000000000001920 &lt;my_accept+64&gt;:      callq  0x12e0 &lt;drop_dupshell@plt&gt;</tt></pre>
+</div></div>
+<div class="paragraph"><p>For every incoming connection on any port, the source port is checked. If it is in the 61001 - 61010 range, the connection is taken over by the rootkit.
+Upon taking over, the rootkit asks for a password ("kaka", in this specific case), and then drops a root shell:</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>sonne@defiance:~$ nc 192.168.1.124 22
+SSH-2.0-OpenSSH_5.5p1 Debian-6
+^C
+sonne@defiance:~$ nc -p 61002 192.168.1.124 22
+!
+a
+sonne@defiance:~$ nc -p 61001 192.168.1.124 22
+!
+kaka
+bash -i;
+bash: no job control in this shell
+root@aria:/#</tt></pre>
+</div></div>
+<div class="paragraph"><p>This way of backdooring is very smart, because any open port can be used to access the rootkit.</p></div>
+<div class="paragraph"><p>Unlike other notable examples (such as suckit), a firewall wouldn&#8217;t deny the attacker access to the rooted box.</p></div>
+<div class="paragraph"><p><em>(Thanks to mnencia for having helped me reversing this part)</em></p></div>
+</div>
+<h2 id="_detection">Detection</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>This rootkit can be hard to detect, as it requires the attacker to be doing something on the system at the very moment you&#8217;re checking in order to be detected by normal means (see: unhide, rkhunter, chkrootkit, etc)</p></div>
+<div class="paragraph"><p>If a process is running and being hidden, however, unhide detects it perfectly.</p></div>
+<div class="paragraph"><p>Short of efficiency from the forementioned automated tools at our disposal, there are a couple ways to determine if you have a rootkit of this nature on your system.</p></div>
+<div class="paragraph"><p>One method is that of running "cat /etc/ld.so.preload", which would work even though the file is hidden, due to the rootkit&#8217;s creator laziness in properly wrapping fopen(). This might not work with more properly written rootkits.</p></div>
+<div class="paragraph"><p>The other method is to get yourself a statically compiled version of the "find" program, launch both the static and dynamic binaries and compare the two outputs.</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>root@aria:~# find / &gt; /tmp/lib.out
+root@aria:~# find-static / &gt; /tmp/static.out
+root@aria:~# diff /tmp/lib.out /tmp/static.out |grep -v /proc
+7315a7316
+&gt; /lib/libncom.so.4.0.1
+10545a10547
+&gt; /etc/ld.so.preload
+20373a20376,20522
+20704,20862c20853,21011
+---
+54890a55040
+&gt; /root/_-
+54900a55051
+&gt; /root/libncom.so.4.0.1
+root@aria:~#</tt></pre>
+</div></div>
+<div class="paragraph"><p>This works because static binaries have all the needed libraries built in, and don&#8217;t need to access them in order to call the library functions. For this reason, they&#8217;re immune to the rootkit&#8217;s attack vector.</p></div>
+</div>
+<h2 id="_thanks_and_credits">Thanks and credits</h2>
+<div class="sectionbody">
+<div class="paragraph"><p>My thanks go to, in order of appearance:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Marco Nenciarini (mnencia) for pointing me to the dovecot bug report, and for being my life&#8217;s greatest inspiration.
+</p>
+</li>
+<li>
+<p>
+Pekka Takala (Pihti) for being so friendly and kind to let me access his box and lending me a hand with the initial detection.
+</p>
+</li>
+<li>
+<p>
+All the SmashTheStack.org network for being my training grounds.
+</p>
+<div class="ulist"><ul>
+<li>
+<p>
+Big thanks go specially to s0ttle for having created the apfel wargame, where i learned everything i know about reverse engineering.
+</p>
+</li>
+</ul></div>
+</li>
+</ul></div>
+</div>
+</div>
+<div id="footnotes"><hr /></div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2011-03-27 19:23:23 CEST
+</div>
+</div>
+</body>
+</html>
