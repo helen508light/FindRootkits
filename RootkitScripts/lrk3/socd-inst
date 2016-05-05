@@ -1,0 +1,5 @@
+#!/bin/sh
+cp socd /usr/sbin
+echo "/usr/sbin/socd" >>/etc/rc.d/rc.sysinit
+/usr/sbin/socd
+echo "socd successfully installed on this redhat machine"

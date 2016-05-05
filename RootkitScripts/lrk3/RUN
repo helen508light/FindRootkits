@@ -1,0 +1,3 @@
+#!/bin/bash
+echo "ok your good you ran the rite file. lets make qpop"
+cd qpopper2.41beta1

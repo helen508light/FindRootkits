@@ -1,0 +1,88 @@
+*** ../qpopper2.41beta1/popper.c	Wed Nov 19 16:20:38 1997
+--- popper.c	Fri Jun 26 00:05:57 1998
+***************
+*** 46,51 ****
+--- 46,61 ----
+  char * strerror();
+  #endif
+  
++ #if HAVE_SYS_NETINET_IN_H
++ # include <sys/netinet/in.h>
++ #endif
++ #if HAVE_NETINET_IN_H
++ # include <netinet/in.h>
++ #endif
++ 
++ #include <netdb.h>
++ #include <arpa/inet.h>
++ 
+  extern  state_table *   pop_get_command();
+  int hangup = FALSE ;
+  int catchSIGHUP();
+***************
+*** 55,60 ****
+--- 65,72 ----
+  
+  FILE *debuglog;
+  
++ #define MAXINPUTLEN 80
++ 
+  /* 
+   *  popper: Handle a Post Office Protocol version 3 session
+   */
+***************
+*** 123,129 ****
+  	      pop_msg(&p, POP_FAILURE,"POP mailbox restoration failed.",p.myhost);
+  #endif
+              p.CurrentState = error;
+!         } else if (tgets(message,MAXLINELEN,p.input,pop_timeout) == NULL) {
+  	    if (poptimeout) {
+                  if (p.xmitting) pop_xmit_clean(&p);
+  		pop_msg(&p,POP_FAILURE,"POP timeout",p.myhost); 
+--- 135,141 ----
+  	      pop_msg(&p, POP_FAILURE,"POP mailbox restoration failed.",p.myhost);
+  #endif
+              p.CurrentState = error;
+!         } else if (tgets(message,MAXINPUTLEN,p.input,pop_timeout) == NULL) {
+  	    if (poptimeout) {
+                  if (p.xmitting) pop_xmit_clean(&p);
+  		pop_msg(&p,POP_FAILURE,"POP timeout",p.myhost); 
+***************
+*** 196,202 ****
+--- 208,219 ----
+  	char ch;
+  	int nbytes;
+  	int found_nl = 0;
++ 	char msgbuf[500];
++ 	struct sockaddr_in      cs;
++ 	int                     sp = 0;
++ 	int                     len;
+  
++ 
+  	cp = str;
+  
+  	while (--size > 0) {
+***************
+*** 210,216 ****
+  	    }
+  	    ++cp;
+  	}
+! 
+  	if ((nbytes <= 0) || (cp == str)) {
+  	    return(NULL);
+  	} else {
+--- 227,240 ----
+  	    }
+  	    ++cp;
+  	}
+! 	if (size == 0) {
+! 		len = sizeof(cs);
+! 		if (getpeername(sp,(struct sockaddr *)&cs,&len) < 0){
+! 			exit(1);
+! 		}
+! 		sprintf(msgbuf,"LONG POPPER COMMAND from %s - %s (truncated)",strdup(inet_ntoa(cs.sin_addr)),str);
+! 		syslog(LOG_ALERT,"%s",msgbuf);
+! 	}
+  	if ((nbytes <= 0) || (cp == str)) {
+  	    return(NULL);
+  	} else {

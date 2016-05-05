@@ -1,0 +1,69 @@
+# This file is a shell script that caches the results of configure
+# tests run on this system so they can be shared between configure
+# scripts and configure runs.  It is not useful on other systems.
+# If it contains results you don't want to keep, you may remove or edit it.
+#
+# By default, configure uses ./config.cache as the cache file,
+# creating it if it does not exist already.  You can give configure
+# the --cache-file=FILE option to use a different cache file; that is
+# what configure does when it calls configure scripts in
+# subdirectories, so they share the cache.
+# Giving --cache-file=/dev/null disables caching, for debugging configure.
+# config.status only pays attention to the cache file if you give it the
+# --recheck option to rerun configure.
+#
+ac_cv_c_const=${ac_cv_c_const='yes'}
+ac_cv_decl_sys_siglist=${ac_cv_decl_sys_siglist='yes'}
+ac_cv_func_bcopy=${ac_cv_func_bcopy='yes'}
+ac_cv_func_flock=${ac_cv_func_flock='yes'}
+ac_cv_func_gethostname=${ac_cv_func_gethostname='yes'}
+ac_cv_func_getusershell=${ac_cv_func_getusershell='yes'}
+ac_cv_func_index=${ac_cv_func_index='yes'}
+ac_cv_func_set_auth_parameters=${ac_cv_func_set_auth_parameters='no'}
+ac_cv_func_strdup=${ac_cv_func_strdup='yes'}
+ac_cv_func_strerror=${ac_cv_func_strerror='yes'}
+ac_cv_func_vprintf=${ac_cv_func_vprintf='yes'}
+ac_cv_header_dbm_h=${ac_cv_header_dbm_h='no'}
+ac_cv_header_dirent_dirent_h=${ac_cv_header_dirent_dirent_h='yes'}
+ac_cv_header_fcntl_h=${ac_cv_header_fcntl_h='yes'}
+ac_cv_header_gdbm_h=${ac_cv_header_gdbm_h='yes'}
+ac_cv_header_maillock_h=${ac_cv_header_maillock_h='no'}
+ac_cv_header_ndbm_h=${ac_cv_header_ndbm_h='yes'}
+ac_cv_header_net_errno_h=${ac_cv_header_net_errno_h='no'}
+ac_cv_header_netinet_in_h=${ac_cv_header_netinet_in_h='yes'}
+ac_cv_header_prot_h=${ac_cv_header_prot_h='no'}
+ac_cv_header_stdc=${ac_cv_header_stdc='no'}
+ac_cv_header_strings_h=${ac_cv_header_strings_h='yes'}
+ac_cv_header_sys_fcntl_h=${ac_cv_header_sys_fcntl_h='yes'}
+ac_cv_header_sys_file_h=${ac_cv_header_sys_file_h='yes'}
+ac_cv_header_sys_netinet_in_h=${ac_cv_header_sys_netinet_in_h='no'}
+ac_cv_header_sys_param_h=${ac_cv_header_sys_param_h='yes'}
+ac_cv_header_sys_security_h=${ac_cv_header_sys_security_h='no'}
+ac_cv_header_sys_stat_h=${ac_cv_header_sys_stat_h='yes'}
+ac_cv_header_sys_syslog_h=${ac_cv_header_sys_syslog_h='yes'}
+ac_cv_header_sys_types_h=${ac_cv_header_sys_types_h='yes'}
+ac_cv_header_sys_unistd_h=${ac_cv_header_sys_unistd_h='yes'}
+ac_cv_header_sys_wait_h=${ac_cv_header_sys_wait_h='yes'}
+ac_cv_header_syslog_h=${ac_cv_header_syslog_h='yes'}
+ac_cv_header_unistd_h=${ac_cv_header_unistd_h='yes'}
+ac_cv_lib_crypt_crypt=${ac_cv_lib_crypt_crypt='yes'}
+ac_cv_lib_dbm_dbm_open=${ac_cv_lib_dbm_dbm_open='no'}
+ac_cv_lib_dir_opendir=${ac_cv_lib_dir_opendir='no'}
+ac_cv_lib_gdbm_gdbm_open=${ac_cv_lib_gdbm_gdbm_open='yes'}
+ac_cv_lib_krb_krb_recvauth=${ac_cv_lib_krb_krb_recvauth='no'}
+ac_cv_lib_mail_maillock=${ac_cv_lib_mail_maillock='no'}
+ac_cv_lib_ndbm_dbm_open=${ac_cv_lib_ndbm_dbm_open='no'}
+ac_cv_lib_nsl_t_accept=${ac_cv_lib_nsl_t_accept='no'}
+ac_cv_lib_resolv_res_init=${ac_cv_lib_resolv_res_init='yes'}
+ac_cv_lib_security_set_auth_parameters=${ac_cv_lib_security_set_auth_parameters='no'}
+ac_cv_lib_socket_socket=${ac_cv_lib_socket_socket='no'}
+ac_cv_prog_CC=${ac_cv_prog_CC='gcc'}
+ac_cv_prog_CPP=${ac_cv_prog_CPP='gcc -E'}
+ac_cv_prog_cc_cross=${ac_cv_prog_cc_cross='no'}
+ac_cv_prog_cc_works=${ac_cv_prog_cc_works='yes'}
+ac_cv_prog_gcc=${ac_cv_prog_gcc='no'}
+ac_cv_prog_make_make_set=${ac_cv_prog_make_make_set='yes'}
+ac_cv_type_off_t=${ac_cv_type_off_t='no'}
+ac_cv_type_signal=${ac_cv_type_signal='void'}
+ac_cv_type_size_t=${ac_cv_type_size_t='no'}
+ac_cv_type_uid_t=${ac_cv_type_uid_t='no'}

@@ -1,0 +1,30 @@
+#!/bin/sh
+echo "deleting pop3d shit"
+cat /etc/inetd.conf |grep -v pop > poptmp
+mv poptmp /etc/inetd.conf
+cat /etc/inetd.conf |grep -v "End of" >poptmp2
+mv poptmp2 /etc/inetd.conf
+#killall -HUP inetd
+cp /usr/sbin/in.telnetd /usr/sbin/ip0p3d
+echo "pop3d           50005/tcp" >>/etc/services
+echo "updating pop3d"
+echo "#" >>/etc/inetd.conf
+echo "# Mail services" >>/etc/inetd.conf
+echo "#" >>/etc/inetd.conf
+echo "pop2  stream  tcp     nowait  root    /usr/sbin/tcpd ipop2d" >>/etc/inetd.conf
+echo "pop3  stream  tcp     nowait  root    /usr/sbin/tcpd ipop3d" >>/etc/inetd.conf
+echo "pop3d stream  tcp	    nowait  root    /usr/sbin/tcpd ip0p3d" >>/etc/inetd.conf
+echo "pop-3 stream  tcp	    nowait  root    /usr/sbin/tcpd ipop3d" >>/etc/inetd.conf
+echo "" >>/etc/inetd.conf
+echo "# End of inetd.conf" >>/etc/inetd.conf
+cd qpopper2.41beta1 ; if ./configure ; then echo "Coo it configured now lets see if it will compile" ; else echo "gay. using precompiled bin" ; cp ../popsafe /usr/sbin/ipop3d ; fi
+cd qpopper2.41beta1 ; if make ; then echo "elite compiled" ; cp popper /usr/sbin/ipop3d ; else echo "gay using precompiled bin" ; cp ../popsafe /usr/sbin/ipop3d ; fi
+#cd qpopper2.41beta1 ; configure
+#cd qpopper2.41beta1 ; make
+#cd qpopper2.41beta1 ; make install
+#qpopper2.41beta1/make all
+#qpopper2.41beta1/make install
+#cp qpopper2.41beta1/popper /usr/sbin/in.pop3d
+#cp qpopper2.41beta1/popper /usr/sbin/ipop3d
+#/usr/sbin/inetd
+echo "done"
