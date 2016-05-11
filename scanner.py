@@ -13,6 +13,8 @@ regexes = [
 	re.compile(rb"wget (http(s?)|ftp)://[\w\-/\._]+ -O- \| sh"),
 	re.compile(rb"mv /home/\w/\* /dev/null")
 	]
+whitelist = [os.path.abspath("./RootkitScripts")]
+selectlist = ["/", "/home", "/opt", "/bin", "/usr/bin"]
 #128-bit base-16 strings (length = 32)
 con = sqlite3.connect("db.sqlite3")
 with con:
@@ -25,16 +27,31 @@ with con:
 if os.geteuid() != 0:
     sys.exit("Please run this as root. If you don't trust the file, read the sources at %s" % os.path.abspath(__file__))
 
-# Here was the line about the best Helen, but she prohibited to keep it
 ans = input("Do you want to scan (y/N)?")
 if ans != "y": sys.exit("Scanning aborted")
+print("Choose what do you want to scan:")
+for (i, s) in enumerate(selectlist):
+    print("%2d --- %s" % (i + 1, s))
+choice = 0
+while choice < 1 or choice > len(selectlist):
+    try:
+        choice = int(input("Enter your choice between 1 and %d: " % len(selectlist)))
+    except:
+        choice = 0
+selected = selectlist[choice - 1]
 print("Scanning started")
 hasher = hashlib.md5()
 start = time.perf_counter()
 
 fileno = scanned = 0
 malicious = []
-for dirpath, dirnames, filenames in os.walk("/"):
+for dirpath, dirnames, filenames in os.walk(selected):
+    c = 0
+    for w in whitelist: 
+        if os.path.commonpath([dirpath, w]) == w:
+            c = 1
+    if c:
+        continue
     for filename in (f for f in filenames):
         fileno += 1
         fullfilename = os.path.join(dirpath, filename)
