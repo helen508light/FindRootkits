@@ -58,16 +58,8 @@ else:
         end = p.find(b",", index)
         pid = int(p[index:end])
         proc.append(pid)
-    print("Choose the IP:")
-    for (i, s) in enumerate(ips):
-        print("%2d --- %s" % (i + 1, s))
-    ipchoice = 0
-    while ipchoice < 1 or ipchoice > len(ips):
-        try:
-            ipchoice = int(input("Enter your IP choice between 1 and %d: " % len(ips)))
-        except:
-            ipchoice = 0
-    selected = ["/proc/%s" % proc[ipchoice - 1]]
+    selected = list({"/proc/%s" % p for p in proc}) # create list from set to avoid duplicates
+    print("Selected directories: %s" % selected)
 print("Scanning started")
 hasher = hashlib.md5()
 start = time.perf_counter()
