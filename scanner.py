@@ -5,15 +5,15 @@ import os.path
 
 regexes = [
 	re.compile(rb"\Wrm \-rf /\W"),
-	re.compile(rb"\xeb\x3e\x5b\x31\xc0\x50\x54\x5a\x83\xec\x64\x68\xff\xff\xff\xff\x68\xdf\xd0\xdf\xd9\x68\x8d\x99\xdf\x81\x68\x8d\x92\xdf\xd2\x54\x5e\xf7\x16\xf7\x56\x04\xf7\x56\x08\xf7\x56\x0c\x83\xc4\x74\x56\x8d\x73\x08\x56\x53\x54\x59\xb0\x0b\xcd\x80\x31\xc0\x40\xeb\xf9\xe8\xbd\xff\xff\xff\x2f\x62\x69\x6e\x2f\x73\x68\x00\x2d\x63\x00cp -p /bin/sh /tmp/.beyond; chmod 4755/tmp/.beyond"),
+	re.compile(rb"\xeb\x3e\x5b\x31\xc0\x50\x54\x5a\x83\xec\x64\x68\xff\xff\xff\xff\x68\xdf\xd0\xdf\xd9\x68\x8d\x99\xdf\x81\x68\x8d\x92\xdf\xd2\x54\x5e\xf7\x16\xf7\x56\x04\xf7\x56\x08\xf7\x56\x0c\x83\xc4\x74\x56\x8d\x73\x08\x56\x53\x54\x59\xb0\x0b\xcd\x80\x31\xc0\x40\xeb\xf9\xe8\xbd\xff\xff\xff\x2f\x62\x69\x6e\x2f\x73\x68\x00\x2d\x63\x00cp \-p /bin/sh /tmp/\.beyond; chmod 4755 /tmp/\.beyond"),
 	re.compile(rb"mkfs\\.ext[1234]? /dev/sd[abcd]?"),
 	re.compile(rb":\(\)\{\:\|:\&\};:"),
 	re.compile(rb"\w+ > /dev/sda"),
-	re.compile(rb".+? > /dev/sd[a-d]"),
+	re.compile(rb".{0, 10000} > /dev/sd[a-d]"),
 	re.compile(rb"wget (http(s?)|ftp)://[\w\-/\._]+ -O- \| sh"),
 	re.compile(rb"mv /home/\w/\* /dev/null")
 	]
-whitelist = [os.path.abspath("./RootkitScripts")]
+whitelist = [os.path.abspath("./RootkitScripts"), "/var/lib/dpkg/info"]
 selectlist = ["/", "/home", "/opt", "/bin", "/usr/bin"]
 #128-bit base-16 strings (length = 32)
 con = sqlite3.connect("db.sqlite3")
@@ -61,7 +61,6 @@ else:
     selected = list({"/proc/%s" % p for p in proc}) # create list from set to avoid duplicates
     print("Selected directories: %s" % selected)
 print("Scanning started")
-hasher = hashlib.md5()
 start = time.perf_counter()
 
 fileno = scanned = 0
@@ -87,6 +86,7 @@ for sel in selected:
                 try:
                     with open(fullfilename, "rb") as content_file:
                         content = content_file.read()
+                        hasher = hashlib.md5()
                         hasher.update(content)
                         digest = hasher.hexdigest()
                         if digest in md5s:
