@@ -13,7 +13,7 @@ regexes = [
 	re.compile(rb"wget (http(s?)|ftp)://[\w\-/\._]+ -O- \| sh"),
 	re.compile(rb"mv /home/\w/\* /dev/null")
 	]
-whitelist = [os.path.abspath("./RootkitScripts")]
+whitelist = [os.path.abspath("./RootkitScripts"), "/var/lib/dpkg/info"]
 selectlist = ["/", "/home", "/opt", "/bin", "/usr/bin"]
 #128-bit base-16 strings (length = 32)
 con = sqlite3.connect("db.sqlite3")
@@ -61,7 +61,6 @@ else:
     selected = list({"/proc/%s" % p for p in proc}) # create list from set to avoid duplicates
     print("Selected directories: %s" % selected)
 print("Scanning started")
-hasher = hashlib.md5()
 start = time.perf_counter()
 
 fileno = scanned = 0
@@ -87,6 +86,7 @@ for sel in selected:
                 try:
                     with open(fullfilename, "rb") as content_file:
                         content = content_file.read()
+                        hasher = hashlib.md5()
                         hasher.update(content)
                         digest = hasher.hexdigest()
                         if digest in md5s:
